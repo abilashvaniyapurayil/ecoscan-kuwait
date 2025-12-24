@@ -4,11 +4,11 @@ import json
 import os
 from datetime import datetime
 
-# --- STEP 1: GOOGLE VERIFICATION (Must be FIRST) ---
-# This plain text helps the Google Bot find your site instantly.
+# --- STEP 1: GOOGLE VERIFICATION (Must be the VERY first thing) ---
+# We write this as plain text so the Google bot can find it instantly.
 st.write("google-site-verification: UbGI9p25Kivjr9u465NRYSpRTy4euChN-XFrwiy3r40")
 
-# This is the hidden meta-tag version for double-security.
+# Hidden tag for extra security.
 GOOGLE_TAG = "UbGI9p25Kivjr9u465NRYSpRTy4euChN-XFrwiy3r40"
 st.markdown(f'<head><meta name="google-site-verification" content="{GOOGLE_TAG}" /></head>', unsafe_allow_html=True)
 
@@ -25,46 +25,30 @@ st.markdown("""
     .founder-box {
         background-color: #ffffff; padding: 20px; border-radius: 15px; 
         border-left: 5px solid #2E7D32; margin-bottom: 20px;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- STEP 3: PUBLIC CONTENT (FOUNDER VISION) ---
-# This remains public so the site is never "empty" for the Google bot.
-st.markdown('<div class="main-banner"><h1>🇰🇼 EcoScan Kuwait</h1><p>Community Sustainability Portal</p></div>', unsafe_allow_html=True)
+# --- STEP 3: PUBLIC FOUNDER CONTENT ---
+# This remains visible so Google sees a "real" site, not an empty login.
+st.markdown('<div class="main-banner"><h1>KW EcoScan Kuwait</h1><p>Community Sustainability Portal</p></div>', unsafe_allow_html=True)
 
 st.markdown(f"""
 <div class="founder-box">
-    <h3>Founder's Vision</h3>
-    <p>"EcoScan Kuwait is a movement to protect our environment by sharing resources. 
-    Every swap reduces landfill waste in our beautiful country."</p>
+    <h3>Our Vision</h3>
+    <p>"EcoScan Kuwait is more than an app; it is a movement to protect our environment 
+    by sharing resources. Every swap reduces landfill waste in our beautiful country."</p>
     <p><b>— Founder: Abhilash Babu</b></p>
 </div>
 """, unsafe_allow_html=True)
 
-# --- STEP 4: LOGIN LOGIC (SIMPLIFIED) ---
-# We use a simple system that doesn't require Google Cloud Secrets.
-if "user" not in st.session_state: st.session_state.user = None
+st.divider()
 
-if not st.session_state.user:
-    st.subheader("Member Access")
-    phone = st.text_input("Mobile Number")
-    pw = st.text_input("Password", type="password")
-    
-    if st.button("Sign In", type="primary"):
-        # This is your special Founder access
-        if phone == "90000000" and pw == "founder2025":
-            st.session_state.user = {"name": "Abhilash Babu", "phone": phone}
-            st.rerun()
-        else:
-            st.error("Access restricted during Google Verification.")
-    
-    st.info("Verification in progress. Community Marketplace will open soon.")
+# --- STEP 4: STATUS MESSAGE ---
+st.success("✅ App is Live. Google Verification in Progress.")
+st.info("The Member Marketplace will unlock automatically once verification is complete.")
 
-else:
-    # --- STEP 5: MEMBER AREA (Hidden until Login) ---
-    st.success(f"Welcome back, Founder {st.session_state.user['name']}")
-    
-    if st.button("Log Out"):
-        st.session_state.user = None
-        st.rerun()
+# Logic to prevent errors while we wait for verification
+if "user" not in st.session_state:
+    st.session_state.user = None
