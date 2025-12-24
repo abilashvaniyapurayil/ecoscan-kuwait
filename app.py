@@ -4,6 +4,11 @@ import pandas as pd
 import json
 import os
 
+st.set_page_config(
+    page_title="EcoScan Pro: Salmiya", 
+    page_icon="🌱", 
+    layout="wide"
+)
 # --- Database & Config ---
 DB_FILE = "items_db.json"
 st.set_page_config(page_title="EcoScan Pro: Salmiya", page_icon="🌱", layout="wide")
@@ -61,3 +66,4 @@ with t3:
             st.caption(f"👤 Offered by: {item['user']} | 🌱 Impact: {item['eco']}")
             if st.button(f"Message about {item['name']}", key=item['name']):
                 st.info("Chat feature connecting to neighbor...")
+
