@@ -1,47 +1,26 @@
 import streamlit as st
+import os
 
-# --- STEP 1: HIDDEN GOOGLE VERIFICATION ---
-# This must be at the very top. It places the tag in the 'Head' for Google.
+# --- 1. THE GOOGLE BACKDOOR ---
+# Replace 'google12345.html' with your ACTUAL filename
+verification_filename = "google12345.html" 
+
+if os.path.exists(verification_filename):
+    with open(verification_filename, "r") as f:
+        html_content = f.read()
+    # This creates a link Google can follow
+    st.download_button("Verification Link", html_content, file_name=verification_filename)
+
+# --- 2. YOUR FOUNDER CONTENT ---
 st.set_page_config(page_title="EcoScan Kuwait", page_icon="🇰🇼")
-
-st.markdown(
-    """
-    <head>
-        <meta name="google-site-verification" content="UbGI9p25Kivjr9u465NRYSpRTy4euChN-XFrwiy3r40" />
-    </head>
-    """, 
-    unsafe_allow_html=True
-)
-
-# --- STEP 2: PROFESSIONAL STYLE ---
 st.markdown("""
     <style>
     .stApp { background-color: #F1F8E9; }
-    .main-banner {
-        background-color: #2E7D32; color: white;
-        padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px;
-    }
-    .vision-card {
-        background-color: #ffffff; padding: 25px; border-radius: 15px; 
-        border-left: 10px solid #2E7D32; box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
-    }
+    .main-banner { background-color: #2E7D32; color: white; padding: 30px; border-radius: 15px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- STEP 3: YOUR FOUNDER CONTENT (Always Public) ---
 st.markdown('<div class="main-banner"><h1>KW EcoScan Kuwait</h1><p>Community Sustainability Portal</p></div>', unsafe_allow_html=True)
 
-st.markdown("""
-<div class="vision-card">
-    <h2 style="color: #2E7D32;">Our Vision</h2>
-    <p style="font-size: 1.2em; font-style: italic;">
-        "EcoScan Kuwait is more than an app; it is a movement to protect our environment 
-        by sharing resources. Every swap reduces landfill waste in our beautiful country."
-    </p>
-    <p><b>— Founder: Abhilash Babu</b></p>
-</div>
-""", unsafe_allow_html=True)
-
-st.divider()
-st.success("✅ Ownership Verification Tag is Live.")
-st.info("Wait 60 seconds after saving, then click 'Verify' in Google Search Console.")
+st.write("### Founder's Vision")
+st.write("EcoScan Kuwait is a movement to protect our environment by sharing resources.")
