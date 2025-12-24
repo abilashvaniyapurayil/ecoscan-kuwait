@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ecoscan-kuwait.streamlit.app/
