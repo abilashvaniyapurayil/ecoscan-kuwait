@@ -9,11 +9,11 @@ from email.mime.multipart import MIMEMultipart
 import streamlit.components.v1 as components
 
 # --- 1. SEARCH & SOCIAL VERIFICATION ---
-# Your specific Google HTML Tag integrated here
+# YOUR GOOGLE TAG INTEGRATED BELOW
 GOOGLE_TAG = "UbGI9p25Kivjr9u465NRYSpRTy4euChN-XFrwiy3r40"
-META_TAG = "YOUR_META_VERIFICATION_CODE_HERE" # Replace when you get this from Meta
+META_TAG = "YOUR_META_VERIFICATION_CODE_HERE" 
 
-# Injecting the verification tags into the app header
+# This component injects the verification into the app's HTML
 components.html(
     f"""
     <html>
@@ -26,7 +26,7 @@ components.html(
     height=0,
 )
 
-# --- 2. MOBILE-FIRST APP CONFIG ---
+# --- 2. MOBILE APP CONFIG ---
 st.set_page_config(
     page_title="EcoScan Kuwait",
     page_icon="🇰🇼",
@@ -36,10 +36,7 @@ st.set_page_config(
 # --- 3. PROFESSIONAL MOBILE STYLING (CSS) ---
 st.markdown("""
     <style>
-    /* Custom Theme Colors */
     .stApp { background-color: #F1F8E9; }
-    
-    /* Branded Top Banner */
     .main-banner {
         background-color: #2E7D32;
         padding: 25px;
@@ -47,10 +44,7 @@ st.markdown("""
         color: white;
         text-align: center;
         margin-bottom: 25px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
     }
-    
-    /* Professional Mobile Buttons */
     .stButton>button {
         border-radius: 25px;
         width: 100%;
@@ -58,15 +52,7 @@ st.markdown("""
         background-color: #2E7D32;
         color: white;
         font-weight: bold;
-        border: none;
-        transition: 0.3s;
     }
-    .stButton>button:hover {
-        background-color: #1B5E20;
-        border: none;
-    }
-
-    /* Tabs Styling */
     div.stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         justify-content: center;
@@ -95,35 +81,82 @@ if "view" not in st.session_state: st.session_state.view = "login"
 
 # --- 6. MAIN APP INTERFACE ---
 if st.session_state.user:
-    # Check if Admin
     is_admin = st.session_state.user.get("role") == "admin"
+    st.markdown('<div class="main-banner"><h1>EcoScan Kuwait</h1><p>Sustainability and Community Swaps</p></div>', unsafe_allow_html=True)
     
-    # Branded Header
-    st.markdown('<div class="main-banner"><h1>EcoScan Kuwait</h1><p>The Future of Community Swapping</p></div>', unsafe_allow_html=True)
-    
-    # Navigation Tabs
     tabs = st.tabs(["📤 Post", "📱 Feed", "🏆 Top", "⚖️ Legal"])
 
-    # TAB: POST ITEM
     with tabs[0]:
-        st.subheader("Earn Eco-Points")
+        st.subheader("Add a New Listing")
         with st.form("post_item", clear_on_submit=True):
-            name = st.text_input("What are you giving away?")
+            name = st.text_input("Item Name")
             cat = st.selectbox("Category", ["Electronics", "Furniture", "Books", "Clothes", "Other"])
-            desc = st.text_area("Item Details")
-            if st.form_submit_button("Publish Nationally (+10 Points)"):
+            if st.form_submit_button("Post & Earn 10 Points"):
                 if name:
                     items = load_data(ITEM_DB)
-                    items.append({
-                        "id": str(datetime.now().timestamp()),
-                        "name": name, "cat": cat, "desc": desc,
-                        "user": st.session_state.user['name'],
-                        "area": st.session_state.user['area']
-                    })
+                    items.append({"id": str(datetime.now().timestamp()), "name": name, "cat": cat, "user": st.session_state.user['name'], "area": st.session_state.user['area']})
                     save_data(ITEM_DB, items)
                     
-                    # Add Points to User Account
                     users = load_data(USER_DB)
                     for u in users:
                         if u['phone'] == st.session_state.user['phone']:
-                            u['points'] =
+                            u['points'] = u.get('points', 0) + 10
+                            break
+                    save_data(USER_DB, users)
+                    st.success("Item Live! +10 Points Earned.")
+                    st.rerun()
+
+    with tabs[1]:
+        st.subheader("Live Feed")
+        items = load_data(ITEM_DB)
+        for i in reversed(items):
+            with st.container(border=True):
+                st.write(f"### {i['name']}")
+                st.caption(f"📍 {i['area']} | Category: {i['cat']}")
+                if is_admin:
+                    if st.button("Delete Listing", key=f"del_{i['id']}"):
+                        items = [item for item in items if item['id'] != i['id']]
+                        save_data(ITEM_DB, items)
+                        st.rerun()
+
+    with tabs[2]:
+        st.subheader("🏆 Leaderboard")
+        all_users = load_data(USER_DB)
+        if all_users:
+            df = pd.DataFrame(all_users)[['name', 'area', 'points']].sort_values('points', ascending=False)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+    with tabs[3]:
+        st.subheader("⚖️ Privacy Policy")
+        st.info("Verified Property for Google and App Store compliance.")
+        st.write("1. Data used only for local swap verification.")
+        st.write("2. Contact support for account deletion.")
+        st.link_button("Founder Support (WhatsApp)", "https://wa.me/96512345678")
+
+else:
+    # --- LOGIN / SIGNUP ---
+    st.title("🇰🇼 EcoScan Kuwait")
+    if st.session_state.view == "login":
+        phone = st.text_input("Mobile Number")
+        pw = st.text_input("Password", type="password")
+        if st.button("Log In"):
+            if phone == "admin" and pw == "admin123":
+                st.session_state.user = {"name": "Founder", "phone": "admin", "area": "Kuwait City", "role": "admin"}
+                st.rerun()
+            users = load_data(USER_DB)
+            u = next((u for u in users if u['phone'] == phone and u['password'] == pw), None)
+            if u: st.session_state.user = u; st.rerun()
+            else: st.error("Verification Error")
+        if st.button("New User? Register"): st.session_state.view = "signup"; st.rerun()
+    else:
+        n = st.text_input("Full Name")
+        p = st.text_input("Mobile Number")
+        a = st.selectbox("Governorate", ["Asimah", "Hawalli", "Farwaniya", "Ahmadi", "Jahra", "Mubarak"])
+        pw_n = st.text_input("Create Password", type="password")
+        if st.button("Join Now"):
+            users = load_data(USER_DB)
+            users.append({"name": n, "phone": p, "area": a, "password": pw_n, "points": 10})
+            save_data(USER_DB, users)
+            st.success("Account Created!")
+            st.session_state.view = "login"
+            st.rerun()
