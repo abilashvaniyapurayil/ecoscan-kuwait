@@ -1,97 +1,63 @@
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image
 import pandas as pd
-import time
-import random
-import io
+import json
+import os
 
-# --- Page Config ---
-st.set_page_config(
-    page_title="EcoScan Pro: Salmiya",
-    page_icon="🌱",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# --- Database & Config ---
+DB_FILE = "items_db.json"
+st.set_page_config(page_title="EcoScan Pro: Salmiya", page_icon="🌱", layout="wide")
 
-# --- Memory & State ---
-if "messages" not in st.session_state: st.session_state.messages = []
-if "show_chat" not in st.session_state: st.session_state.show_chat = False
-if "swap_complete" not in st.session_state: st.session_state.swap_complete = False
+def load_data():
+    if os.path.exists(DB_FILE):
+        with open(DB_FILE, "r") as f: return json.load(f)
+    # Default data for a beautiful start
+    return [
+        {"name": "Bicycle", "user": "Ahmad", "lat": 29.3375, "lon": 48.0750, "eco": "22kg"},
+        {"name": "Bookshelf", "user": "Fatima", "lat": 29.3420, "lon": 48.0820, "eco": "15kg"}
+    ]
 
-# --- Sidebar: Global Impact ---
-st.sidebar.title("🌍 Global Impact")
-st.sidebar.metric(label="Items Swapped Today", value="1,284", delta="12% vs Yesterday")
-st.sidebar.metric(label="CO2 Prevented", value="5,120 kg")
-st.sidebar.divider()
-st.sidebar.subheader("🏆 Eco-Warrior Leaderboard")
-st.sidebar.table({"Neighbor": ["Fatima", "Ali", "Zaid", "You"], "Points": [1420, 1100, 850, 120]})
+def save_item(name, user, lat, lon, eco):
+    data = load_data()
+    data.append({"name": name, "user": user, "lat": lat, "lon": lon, "eco": eco})
+    with open(DB_FILE, "w") as f: json.dump(data, f)
 
-# --- Function: Create Impact Certificate ---
-def create_certificate(name, co2_saved):
-    # Create a simple high-res certificate image
-    img = Image.new('RGB', (800, 500), color=(255, 255, 255))
-    d = ImageDraw.Draw(img)
-    # Green eco-border
-    d.rectangle([20, 20, 780, 480], outline=(76, 175, 80), width=15)
-    # Add Text (Simple version for compatibility)
-    d.text((280, 100), "OFFICIAL ECO-HERO", fill=(0, 0, 0))
-    d.text((280, 200), f"Awarded to: {name}", fill=(0, 0, 0))
-    d.text((280, 250), f"Total Impact: {co2_saved}kg CO2 Saved", fill=(76, 175, 80))
-    
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+# --- Sidebar Impact ---
+data = load_data()
+st.sidebar.title("🌍 Salmiya Impact")
+st.sidebar.metric(label="CO2 Prevented", value=f"{5120 + (len(data)*5)} kg", delta="12%")
+
+# SHARE BUTTON (Feature #3)
+share_text = f"I just saved {5120 + (len(data)*5)}kg of CO2 using EcoScan Salmiya! 🌱"
+st.sidebar.markdown(f"[![Share on WhatsApp](https://img.shields.io/badge/Share-WhatsApp-25D366?style=for-the-badge&logo=whatsapp)](https://api.whatsapp.com/send?text={share_text})")
 
 # --- Main App ---
-st.title("🌱 EcoScan & Swap: Market Leader Edition")
+st.title("🌱 EcoScan & Swap")
+t1, t2, t3 = st.tabs(["📤 Scan & Post", "📍 Salmiya Map", "📱 Feed"])
 
-tab1, tab2 = st.tabs(["📤 Scan & Swap", "📱 Neighborhood Feed"])
-
-with tab1:
-    uploaded_file = st.file_uploader("Scan an item to begin:", type=["jpg", "png", "jpeg"])
-    
-    if uploaded_file is not None:
-        c1, c2 = st.columns([1, 1])
-        with c1: st.image(Image.open(uploaded_file), use_container_width=True)
-        with c2:
-            st.success("✅ **AI Detected:** High-quality swap item!")
-            if st.button("Message Matches in Salmiya"):
-                st.session_state.show_chat = True
-                st.toast("Sarah notified!")
-
-    st.divider()
-    st.subheader("📍 Real-time Neighbor Heatmap")
-    my_lat, my_lon = 29.332, 48.068
-    map_data = pd.DataFrame({'lat': [my_lat, my_lat+0.005, my_lat-0.003], 'lon': [my_lon, my_lon+0.004, my_lon-0.002]})
-    st.map(map_data)
-
-with tab2:
-    st.subheader("👀 Trending in Salmiya")
-    items = [
-        {"name": "Office Chair", "user": "Sarah", "dist": "0.4mi", "eco": "15kg"},
-        {"name": "Kids Bicycle", "user": "Ahmad", "dist": "0.8mi", "eco": "22kg"}
-    ]
-    for item in items:
-        with st.container(border=True):
-            st.write(f"**{item['name']}** - posted by {item['user']}")
-            st.caption(f"📍 {item['dist']} away | 🌱 Saves {item['eco']} CO2")
-
-# --- Chat & Certificate Logic ---
-if st.session_state.show_chat:
-    st.divider()
-    with st.expander("💬 Conversation with Sarah", expanded=True):
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]): st.write(msg["content"])
-        
-        if p := st.chat_input("Say something to confirm the swap..."):
-            st.session_state.messages.append({"role": "user", "content": p})
-            st.session_state.messages.append({"role": "assistant", "content": "Deal! I'll see you tomorrow at 5 PM! 🤝"})
-            st.session_state.swap_complete = True
-            st.rerun()
-
-        if st.session_state.swap_complete:
+with t1:
+    st.subheader("Post an Item")
+    up = st.file_uploader("Scan item photo", type=["jpg", "png", "jpeg"])
+    if up:
+        st.image(Image.open(up), width=300)
+        if st.button("Confirm & Post to Salmiya"):
+            # Simulates a random location in Salmiya for testing
+            save_item(up.name.split('.')[0], "You", 29.33 + (len(data)*0.001), 48.07 + (len(data)*0.001), "10kg")
+            st.success("Item is live! Check the Map.")
             st.balloons()
-            st.success("Swap Confirmed! You've officially saved more carbon today than 90% of people.")
-            cert = create_certificate("Salmiya Hero", random.randint(5, 25))
 
-            st.download_button(label="📥 Download My Impact Certificate", data=cert, file_name="eco_certificate.png", mime="image/png")
+with t2:
+    st.subheader("Neighborhood Swap Map") # Feature #1 & #2
+    map_df = pd.DataFrame(data)
+    # This creates the interactive map centered on Salmiya
+    st.map(map_df, latitude='lat', longitude='lon', zoom=13)
+    st.info("💡 The red dots show where neighbors are ready to swap items!")
+
+with t3:
+    st.subheader("Recent Swaps")
+    for item in reversed(data):
+        with st.container(border=True):
+            st.write(f"**{item['name']}**")
+            st.caption(f"👤 Offered by: {item['user']} | 🌱 Impact: {item['eco']}")
+            if st.button(f"Message about {item['name']}", key=item['name']):
+                st.info("Chat feature connecting to neighbor...")
