@@ -9,7 +9,7 @@ st.set_page_config(page_title="EcoScan Kuwait", page_icon="🇰🇼", layout="wi
 
 USER_DB = "users_db.json"
 ITEM_DB = "items_db.json"
-FOUNDER_IMAGE = "founder.jpg" 
+FOUNDER_IMAGE = "founder.jpeg"
 KUWAIT_AREAS = ["Asimah", "Hawalli", "Farwaniya", "Mubarak Al-Kabeer", "Ahmadi", "Jahra"]
 
 def load_json(file):
@@ -97,3 +97,4 @@ if st.session_state.user:
 else:
     st.info("### Start Your Sustainability Journey")
     st.write("Please use the sidebar to **Sign Up** and join the community.")
+
