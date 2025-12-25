@@ -148,4 +148,156 @@ def main():
     if not st.session_state['has_seen_welcome']:
         show_welcome_modal()
 
-    # ==============*
+    # =========================================================
+    # VIEW A: LOGGED OUT (Clean, Centered Login)
+    # =========================================================
+    if not st.session_state['logged_in']:
+        
+        # Spacer to push content down slightly
+        st.write("") 
+        st.write("") 
+
+        # Center everything using columns
+        c_left, c_center, c_right = st.columns([1, 2, 1])
+        
+        with c_center:
+            st.markdown("<h1 style='text-align: center;'>📱 EcoScan Market</h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: gray;'>Secure. Simple. Local.</p>", unsafe_allow_html=True)
+            
+            st.divider()
+            
+            tab_login, tab_signup = st.tabs(["🔐 Login", "📝 Sign Up"])
+            
+            with tab_login:
+                st.write("")
+                login_user = st.text_input("Username", key="login_user")
+                login_pass = st.text_input("Password", type="password", key="login_pass")
+                st.write("")
+                if st.button("Log In", use_container_width=True):
+                    phone_found = check_login(login_user, login_pass)
+                    if phone_found:
+                        st.session_state['logged_in'] = True
+                        st.session_state['username'] = login_user
+                        st.session_state['user_phone'] = phone_found
+                        # Mark welcome as seen so it doesn't pop up again this session
+                        st.session_state['has_seen_welcome'] = True
+                        st.rerun()
+                    else:
+                        st.error("Incorrect username or password")
+            
+            with tab_signup:
+                st.write("")
+                new_user = st.text_input("New Username")
+                new_pass = st.text_input("New Password", type="password")
+                c_code, c_num = st.columns([1, 2])
+                with c_code:
+                    country_code = st.selectbox("Code", ["+965", "+966", "+971", "+974", "+20", "+1", "+44"])
+                with c_num:
+                    new_phone = st.text_input("Mobile Number")
+                st.write("")
+
+                if st.button("Sign Up", use_container_width=True):
+                    if new_user and new_pass and new_phone:
+                        if signup_user(new_user, new_pass, new_phone, country_code):
+                            st.success("Account created! Please log in.")
+                        else:
+                            st.error("Username already exists.")
+                    else:
+                        st.warning("Please fill all fields.")
+
+    # =========================================================
+    # VIEW B: LOGGED IN (Main Screen = Listings, Sidebar = Menu)
+    # =========================================================
+    else:
+        with st.sidebar:
+            st.image("founder.jpeg", width=80)
+            st.write(f"Hello, **{st.session_state['username']}**")
+            st.divider()
+            if st.button("Log Out", type="primary"):
+                st.session_state['logged_in'] = False
+                st.session_state['has_seen_welcome'] = True # Keep it true so it doesn't pop up on logout
+                st.rerun()
+
+        tab1, tab2, tab3 = st.tabs(["🛍️ Buy", "➕ Sell", "👤 Profile"])
+
+        # -- TAB 1: BUY ITEMS --
+        with tab1:
+            st.subheader("Latest Listings")
+            search_query = st.text_input("🔍 Search items...", "")
+            items = get_items()
+            
+            if search_query:
+                items = items[items['title'].str.contains(search_query, case=False, na=False)]
+
+            if items.empty:
+                st.info("No items found.")
+            else:
+                for index, row in items.iterrows():
+                    with st.container(border=True):
+                        c1, c2 = st.columns([1, 3])
+                        with c1:
+                            st.image("https://via.placeholder.com/150?text=Item", use_container_width=True)
+                        with c2:
+                            st.subheader(row['title'])
+                            st.write(f"**{row['price']} KD**")
+                            st.write(f"{row['description']}")
+                            
+                            wa_message = f"Hi, I am interested in: {row['title']}"
+                            wa_link = f"https://wa.me/{row['contact']}?text={wa_message.replace(' ', '%20')}"
+                            st.link_button("Chat on WhatsApp 💬", wa_link, type="primary")
+
+                            with st.expander("View Offers"):
+                                existing_comments = get_comments(row['id'])
+                                for c_user, c_text, c_time in existing_comments:
+                                    st.text(f"{c_user}: {c_text}")
+                                
+                                new_comment = st.text_input("Your offer:", key=f"c_{row['id']}")
+                                if st.button("Send", key=f"btn_{row['id']}"):
+                                    add_comment(row['id'], st.session_state['username'], new_comment)
+                                    st.success("Sent!")
+                                    time.sleep(1)
+                                    st.rerun()
+
+        # -- TAB 2: SELL ITEM --
+        with tab2:
+            st.header("List Item")
+            with st.form("sell_form", clear_on_submit=True):
+                title = st.text_input("Title")
+                desc = st.text_area("Description")
+                price = st.number_input("Price (KD)", min_value=0.0, step=0.5)
+                photo = st.file_uploader("Photo", type=['png', 'jpg', 'jpeg'])
+                
+                if st.form_submit_button("Publish", use_container_width=True):
+                    if title and price > 0:
+                        create_item(st.session_state['username'], title, desc, price, st.session_state['user_phone'], photo)
+                        st.balloons()
+                        st.success("Listed!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Title & Price required.")
+
+        # -- TAB 3: PROFILE --
+        with tab3:
+            st.header("My Profile")
+            st.write(f"**Username:** {st.session_state['username']}")
+            st.write(f"**Contact:** {st.session_state['user_phone']}")
+            
+            st.divider()
+            
+            # --- THE FOUNDER MESSAGE (PERMANENT HOME) ---
+            with st.expander("👋 About EcoScan / Founder Message", expanded=True):
+                c1, c2 = st.columns([1, 3])
+                with c1:
+                    try:
+                        st.image("founder.jpeg", use_container_width=True)
+                    except:
+                        st.write("📷")
+                with c2:
+                    st.write("### Welcome, Community Member!")
+                    st.write("We built this platform to make buying and selling simple, transparent, and direct.")
+                    st.write("Our goal is to reduce waste and help you find great value in your local community.")
+                    st.caption("— Digital Endurance Team")
+
+if __name__ == "__main__":
+    main()
