@@ -117,7 +117,6 @@ def show_welcome_modal():
 def main():
     st.set_page_config(page_title="EcoScan Market", page_icon="📱", layout="wide")
     
-    # CSS to hide default elements
     hide_st_style = """
         <style>
         #MainMenu {visibility: hidden;}
@@ -145,7 +144,6 @@ def main():
         st.session_state['username'] = None
         st.session_state['user_phone'] = None
     
-    # State for Welcome Modal
     if 'has_seen_welcome' not in st.session_state:
         st.session_state['has_seen_welcome'] = False
 
@@ -244,9 +242,14 @@ def main():
                             st.write(f"**{row['price']} KD**")
                             st.write(f"{row['description']}")
                             
-                            wa_message = f"Hi, I am interested in: {row['title']}"
-                            wa_link = f"https://wa.me/{row['contact']}?text={wa_message.replace(' ', '%20')}"
-                            st.link_button("Chat on WhatsApp 💬", wa_link, type="primary")
+                            # --- LOGIC FIX: HIDE WHATSAPP BUTTON IF IT IS YOUR OWN ITEM ---
+                            if row['user'] == st.session_state['username']:
+                                st.caption("👤 *You listed this item*")
+                            else:
+                                wa_message = f"Hi, I am interested in: {row['title']}"
+                                wa_link = f"https://wa.me/{row['contact']}?text={wa_message.replace(' ', '%20')}"
+                                st.link_button("Chat on WhatsApp 💬", wa_link, type="primary")
+                            # -------------------------------------------------------------
 
                             with st.expander("View Offers"):
                                 existing_comments = get_comments(row['id'])
@@ -287,7 +290,6 @@ def main():
             
             st.divider()
             
-            # --- THE FOUNDER MESSAGE (PERMANENT HOME) ---
             with st.expander("👋 About EcoScan / Founder Message", expanded=True):
                 c1, c2 = st.columns([1, 3])
                 with c1:
