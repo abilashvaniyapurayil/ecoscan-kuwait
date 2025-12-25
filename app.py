@@ -7,16 +7,13 @@ import re
 
 # --- 1. Database Functions ---
 
-# Naming it v2 to ensure fresh schema structure
 DB_NAME = 'marketplace_v2.db'
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Users table: phone_id is now the PRIMARY KEY (Unique)
-    # display_name is just for showing the name (can be duplicate)
-    # country_code is stored to rebuild the whatsapp link later
+    # Users table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     phone_id TEXT PRIMARY KEY, 
                     password TEXT, 
@@ -24,7 +21,7 @@ def init_db():
                     country_code TEXT
                 )''')
     
-    # Items table: owner_phone links to the user
+    # Items table
     c.execute('''CREATE TABLE IF NOT EXISTS items (
                     id TEXT PRIMARY KEY, 
                     owner_phone TEXT, 
@@ -37,6 +34,7 @@ def init_db():
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )''')
     
+    # Comments table
     c.execute('''CREATE TABLE IF NOT EXISTS comments (
                     id TEXT PRIMARY KEY, 
                     item_id TEXT, 
@@ -51,26 +49,31 @@ def get_db_connection():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 def sanitize_phone(phone_number):
-    """Removes spaces or special chars from phone input"""
+    """
+    Removes anything that is NOT a digit.
+    Example: ' 123-456 ' -> '123456'
+    """
     if not phone_number:
         return ""
-    return re.sub(r'\D', '', phone_number)
+    # Remove spaces and dashes first
+    s = str(phone_number).strip()
+    return re.sub(r'\D', '', s)
 
 def signup_user(display_name, password, phone_input, country_code):
     conn = get_db_connection()
     c = conn.cursor()
     
     clean_phone = sanitize_phone(phone_input)
+    clean_pass = password.strip() # Remove leading/trailing spaces
+    clean_name = display_name.strip()
     
     try:
-        # We store the clean phone as the ID. 
-        # If this ID exists, sqlite throws IntegrityError (Duplicate)
         c.execute("INSERT INTO users (phone_id, password, display_name, country_code) VALUES (?, ?, ?, ?)", 
-                  (clean_phone, password, display_name, country_code))
+                  (clean_phone, clean_pass, clean_name, country_code))
         conn.commit()
         return True
     except sqlite3.IntegrityError:
-        return False # This means phone number already registered
+        return False # Duplicate phone
     finally:
         conn.close()
 
@@ -79,14 +82,16 @@ def check_login(phone_input, password):
     c = conn.cursor()
     
     clean_phone = sanitize_phone(phone_input)
+    clean_pass = password.strip() # Remove leading/trailing spaces
     
-    # Login using Phone (ID) and Password
-    c.execute("SELECT display_name, country_code FROM users WHERE phone_id=? AND password=?", (clean_phone, password))
+    # Debug: You can uncomment these to see what is actually being checked
+    # print(f"Checking Login -> Phone: {clean_phone}, Pass: {clean_pass}")
+    
+    c.execute("SELECT display_name, country_code FROM users WHERE phone_id=? AND password=?", (clean_phone, clean_pass))
     result = c.fetchone()
     conn.close()
     
     if result:
-        # Return the Display Name and the stored Country Code
         return {"display_name": result[0], "country_code": result[1], "phone_id": clean_phone}
     return None
 
@@ -174,17 +179,15 @@ def main():
         st.rerun()
     st.session_state['last_active'] = time.time()
 
-    # Initialize Session State
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
-        st.session_state['user_phone_id'] = None # This is the unique ID
-        st.session_state['display_name'] = None  # This is for display
+        st.session_state['user_phone_id'] = None
+        st.session_state['display_name'] = None
         st.session_state['country_code'] = None
     
     if 'has_seen_welcome' not in st.session_state:
         st.session_state['has_seen_welcome'] = False
 
-    # Show Welcome Modal
     if not st.session_state['has_seen_welcome']:
         show_welcome_modal()
 
@@ -209,8 +212,10 @@ def main():
             # --- LOGIN TAB ---
             with tab_login:
                 st.write("")
-                st.info("Log in with your Mobile Number.")
-                login_phone = st.text_input("Mobile Number (User ID)", key="login_phone")
+                st.info("Log in with your Mobile Number (No Country Code).")
+                
+                # Explicit label to avoid confusion
+                login_phone = st.text_input("Mobile Number (e.g., 55512345)", key="login_phone")
                 login_pass = st.text_input("Password", type="password", key="login_pass")
                 st.write("")
                 
@@ -224,11 +229,12 @@ def main():
                         st.session_state['has_seen_welcome'] = True
                         st.rerun()
                     else:
-                        st.error("Incorrect Mobile Number or Password")
+                        st.error("Incorrect Number or Password. Did you include the country code by mistake?")
             
             # --- SIGN UP TAB ---
             with tab_signup:
                 st.write("")
+                st.caption("Create your account")
                 new_name = st.text_input("Display Name (e.g., John Doe)")
                 new_pass = st.text_input("New Password", type="password")
                 
@@ -236,7 +242,7 @@ def main():
                 with c_code:
                     country_code = st.selectbox("Code", ["+965", "+966", "+971", "+974", "+20", "+1", "+44"])
                 with c_num:
-                    new_phone = st.text_input("Mobile Number (This will be your Login ID)")
+                    new_phone = st.text_input("Mobile Number (No Country Code)")
                 
                 st.write("")
 
@@ -245,7 +251,7 @@ def main():
                         # Attempt to register
                         success = signup_user(new_name, new_pass, new_phone, country_code)
                         if success:
-                            st.success("Account created successfully! Please Log In.")
+                            st.success("Account created! Please switch to the Login tab.")
                         else:
                             st.error(f"The number {new_phone} is already registered.")
                     else:
@@ -289,8 +295,6 @@ def main():
                             st.write(f"{row['description']}")
                             st.caption(f"Seller: {row['owner_name']}")
                             
-                            # --- LOGIC: HIDE WHATSAPP BUTTON IF I AM THE OWNER ---
-                            # We compare unique Phone IDs, not names
                             if row['owner_phone'] == st.session_state['user_phone_id']:
                                 st.caption("👤 *You listed this item*")
                             else:
@@ -307,52 +311,4 @@ def main():
                                 
                                 new_comment = st.text_input("Comment:", key=f"c_{row['id']}")
                                 if st.button("Post", key=f"btn_{row['id']}"):
-                                    add_comment(row['id'], st.session_state['display_name'], new_comment)
-                                    st.success("Posted!")
-                                    time.sleep(1)
-                                    st.rerun()
-
-        # -- TAB 2: SELL ITEM --
-        with tab2:
-            st.header("List Item")
-            with st.form("sell_form", clear_on_submit=True):
-                title = st.text_input("Title")
-                desc = st.text_area("Description")
-                price = st.number_input("Price (KD)", min_value=0.0, step=0.5)
-                photo = st.file_uploader("Photo", type=['png', 'jpg', 'jpeg'])
-                
-                if st.form_submit_button("Publish", use_container_width=True):
-                    if title and price > 0:
-                        # We pass the Unique Phone ID as owner, plus the display name for caching
-                        create_item(
-                            st.session_state['user_phone_id'], 
-                            st.session_state['display_name'], 
-                            title, 
-                            desc, 
-                            price, 
-                            st.session_state['country_code'], 
-                            photo
-                        )
-                        st.balloons()
-                        st.success("Listed successfully!")
-                        time.sleep(1)
-                        st.rerun()
-                    else:
-                        st.error("Title & Price required.")
-
-        # -- TAB 3: PROFILE --
-        with tab3:
-            st.header("My Profile")
-            st.write(f"**Name:** {st.session_state['display_name']}")
-            st.write(f"**Mobile (ID):** {st.session_state['user_phone_id']}")
-            st.write(f"**Country Code:** {st.session_state['country_code']}")
-            
-            st.divider()
-            
-            with st.expander("👋 About EcoScan", expanded=True):
-                st.write("### Welcome, Community Member!")
-                st.write("We built this platform to make buying and selling simple, transparent, and direct.")
-                st.caption("— Digital Endurance Team")
-
-if __name__ == "__main__":
-    main()
+                                    add_comment(row['id'], st.session_state['display_name'], new_comment)*
