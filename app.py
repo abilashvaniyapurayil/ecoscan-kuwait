@@ -84,9 +84,6 @@ def check_login(phone_input, password):
     clean_phone = sanitize_phone(phone_input)
     clean_pass = password.strip() # Remove leading/trailing spaces
     
-    # Debug: You can uncomment these to see what is actually being checked
-    # print(f"Checking Login -> Phone: {clean_phone}, Pass: {clean_pass}")
-    
     c.execute("SELECT display_name, country_code FROM users WHERE phone_id=? AND password=?", (clean_phone, clean_pass))
     result = c.fetchone()
     conn.close()
@@ -311,4 +308,51 @@ def main():
                                 
                                 new_comment = st.text_input("Comment:", key=f"c_{row['id']}")
                                 if st.button("Post", key=f"btn_{row['id']}"):
-                                    add_comment(row['id'], st.session_state['display_name'], new_comment)*
+                                    add_comment(row['id'], st.session_state['display_name'], new_comment)
+                                    st.success("Posted!")
+                                    time.sleep(1)
+                                    st.rerun()
+
+        # -- TAB 2: SELL ITEM --
+        with tab2:
+            st.header("List Item")
+            with st.form("sell_form", clear_on_submit=True):
+                title = st.text_input("Title")
+                desc = st.text_area("Description")
+                price = st.number_input("Price (KD)", min_value=0.0, step=0.5)
+                photo = st.file_uploader("Photo", type=['png', 'jpg', 'jpeg'])
+                
+                if st.form_submit_button("Publish", use_container_width=True):
+                    if title and price > 0:
+                        create_item(
+                            st.session_state['user_phone_id'], 
+                            st.session_state['display_name'], 
+                            title, 
+                            desc, 
+                            price, 
+                            st.session_state['country_code'], 
+                            photo
+                        )
+                        st.balloons()
+                        st.success("Listed successfully!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Title & Price required.")
+
+        # -- TAB 3: PROFILE --
+        with tab3:
+            st.header("My Profile")
+            st.write(f"**Name:** {st.session_state['display_name']}")
+            st.write(f"**Mobile (ID):** {st.session_state['user_phone_id']}")
+            st.write(f"**Country Code:** {st.session_state['country_code']}")
+            
+            st.divider()
+            
+            with st.expander("👋 About EcoScan", expanded=True):
+                st.write("### Welcome, Community Member!")
+                st.write("We built this platform to make buying and selling simple, transparent, and direct.")
+                st.caption("— Digital Endurance Team")
+
+if __name__ == "__main__":
+    main()
