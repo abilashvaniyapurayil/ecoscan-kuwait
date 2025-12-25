@@ -6,6 +6,7 @@ import uuid
 import re
 
 # --- 1. Database Functions ---
+
 def init_db():
     conn = sqlite3.connect('marketplace.db')
     c = conn.cursor()
@@ -19,11 +20,14 @@ def get_db_connection():
     return sqlite3.connect('marketplace.db', check_same_thread=False)
 
 def sanitize_phone(phone_number, country_code):
-    if not phone_number: return None
+    if not phone_number:
+        return None
     clean_num = re.sub(r'\D', '', phone_number)
     clean_code = re.sub(r'\D', '', country_code)
-    if clean_num.startswith(clean_code): return clean_num
-    else: return clean_code + clean_num
+    if clean_num.startswith(clean_code):
+        return clean_num
+    else:
+        return clean_code + clean_num
 
 def signup_user(username, password, phone, country_code):
     conn = get_db_connection()
@@ -44,7 +48,8 @@ def check_login(username, password):
     c.execute("SELECT password, phone FROM users WHERE username=?", (username,))
     result = c.fetchone()
     conn.close()
-    if result and result[0] == password: return result[1]
+    if result and result[0] == password:
+        return result[1]
     return None
 
 def create_item(user, title, description, price, contact, image):
@@ -87,9 +92,8 @@ def get_comments(item_id):
     conn.close()
     return data
 
-# --- 2. Helper Components ---
+# --- 2. Helper Components (Dialogs) ---
 
-# This decorator creates a modal popup
 @st.dialog("👋 Welcome from the Founder")
 def show_welcome_modal():
     c1, c2 = st.columns([1, 2])
@@ -113,6 +117,7 @@ def show_welcome_modal():
 def main():
     st.set_page_config(page_title="EcoScan Market", page_icon="📱", layout="wide")
     
+    # CSS to hide default elements
     hide_st_style = """
         <style>
         #MainMenu {visibility: hidden;}
@@ -153,11 +158,9 @@ def main():
     # =========================================================
     if not st.session_state['logged_in']:
         
-        # Spacer to push content down slightly
         st.write("") 
         st.write("") 
 
-        # Center everything using columns
         c_left, c_center, c_right = st.columns([1, 2, 1])
         
         with c_center:
@@ -179,7 +182,6 @@ def main():
                         st.session_state['logged_in'] = True
                         st.session_state['username'] = login_user
                         st.session_state['user_phone'] = phone_found
-                        # Mark welcome as seen so it doesn't pop up again this session
                         st.session_state['has_seen_welcome'] = True
                         st.rerun()
                     else:
@@ -215,7 +217,7 @@ def main():
             st.divider()
             if st.button("Log Out", type="primary"):
                 st.session_state['logged_in'] = False
-                st.session_state['has_seen_welcome'] = True # Keep it true so it doesn't pop up on logout
+                st.session_state['has_seen_welcome'] = True
                 st.rerun()
 
         tab1, tab2, tab3 = st.tabs(["🛍️ Buy", "➕ Sell", "👤 Profile"])
@@ -287,17 +289,4 @@ def main():
             
             # --- THE FOUNDER MESSAGE (PERMANENT HOME) ---
             with st.expander("👋 About EcoScan / Founder Message", expanded=True):
-                c1, c2 = st.columns([1, 3])
-                with c1:
-                    try:
-                        st.image("founder.jpeg", use_container_width=True)
-                    except:
-                        st.write("📷")
-                with c2:
-                    st.write("### Welcome, Community Member!")
-                    st.write("We built this platform to make buying and selling simple, transparent, and direct.")
-                    st.write("Our goal is to reduce waste and help you find great value in your local community.")
-                    st.caption("— Digital Endurance Team")
-
-if __name__ == "__main__":
-    main()
+                c1, c2 =*
