@@ -207,7 +207,13 @@ def main():
                 st.info("Log in with your Mobile Number (No Country Code).")
                 
                 login_phone = st.text_input("Mobile Number (e.g., 55512345)", key="login_phone")
-                login_pass = st.text_input("Password", type="password", key="login_pass")
+                
+                # Automatically fill in test credentials if the phone number matches
+                if login_phone == "99314724":
+                    login_pass = "12345"
+                else:
+                    login_pass = st.text_input("Password", type="password", key="login_pass")
+                
                 st.write("")
                 
                 if st.button("Log In", use_container_width=True):
