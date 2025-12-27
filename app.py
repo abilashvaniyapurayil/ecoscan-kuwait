@@ -49,10 +49,6 @@ def get_db_connection():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 def sanitize_phone(phone_number):
-    """
-    Removes anything that is NOT a digit.
-    Example: ' 123-456 ' -> '123456'
-    """
     if not phone_number:
         return ""
     s = str(phone_number).strip()
@@ -255,19 +251,7 @@ def main():
     # VIEW B: LOGGED IN
     # =========================================================
     else:
-        with st.sidebar:
-            st.image("founder.jpeg", width=80)
-            st.write(f"Welcome, **{st.session_state['display_name']}**")
-            st.caption(f"ID: {st.session_state['user_phone_id']}")
-            st.divider()
-            
-            if st.button("🚪 Log Out", type="primary", use_container_width=True):
-                st.session_state['logged_in'] = False
-                st.session_state['user_phone_id'] = None
-                st.session_state['has_seen_welcome'] = False
-                st.rerun()
-
-        tab1, tab2, tab3 = st.tabs(["🛍️ Buy", "➕ Sell", "👤 Profile"])
+        tab1, tab2, tab3, tab_logout, tab_about = st.tabs(["🛍️ Buy", "➕ Sell", "👤 Profile", "🚪 Log Out", "ℹ️ About Us"])
 
         # -- TAB 1: BUY ITEMS --
         with tab1:
@@ -352,6 +336,24 @@ def main():
                 st.write("### Welcome, Community Member!")
                 st.write("We built this platform to make buying and selling simple, transparent, and direct.")
                 st.caption("— Digital Endurance Team")
+
+        # -- TAB 4: LOGOUT --
+        with tab_logout:
+            if st.button("Confirm Logout", use_container_width=True):
+                st.session_state['logged_in'] = False
+                st.session_state['user_phone_id'] = None
+                st.session_state['has_seen_welcome'] = False
+                st.success("You have been logged out.")
+                st.rerun()
+
+        # -- TAB 5: ABOUT US --
+        with tab_about:
+            st.header("About Us")
+            st.write("### Founders:")
+            st.write("**John Doe** - CEO\n**Jane Smith** - CTO")
+            st.write("### Company Details:")
+            st.write("EcoScan Market aims to provide a secure and user-friendly platform for buying and selling items locally.")
+            st.write("Our mission is to simplify transactions and build a trusted community.")
 
 if __name__ == "__main__":
     main()
