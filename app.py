@@ -350,7 +350,9 @@ def main():
         with tab_about:
             st.header("About Us")
             st.write("### Founders:")
-            st.write("**John Doe** - CEO\n**Jane Smith** - CTO")
+            st.image("https://raw.githubusercontent.com/yourusername/yourrepo/main/founder.jpeg", width=150)  # Update with your actual GitHub image URL
+            st.write("**Dr. Abhilash Babu Vaniyapurayil** - Founder")
+
             st.write("### Company Details:")
             st.write("EcoScan Market aims to provide a secure and user-friendly platform for buying and selling items locally.")
             st.write("Our mission is to simplify transactions and build a trusted community.")
