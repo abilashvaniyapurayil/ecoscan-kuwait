@@ -55,7 +55,6 @@ def sanitize_phone(phone_number):
     """
     if not phone_number:
         return ""
-    # Remove spaces and dashes first
     s = str(phone_number).strip()
     return re.sub(r'\D', '', s)
 
@@ -146,7 +145,6 @@ def show_welcome_modal():
         st.caption("— Digital Endurance Team")
     
     st.divider()
-    # When this button is clicked, we update state AND rerun to close modal immediately
     if st.button("Continue to App", type="primary", use_container_width=True):
         st.session_state['has_seen_welcome'] = True
         st.rerun()
@@ -177,7 +175,6 @@ def main():
         st.rerun()
     st.session_state['last_active'] = time.time()
 
-    # --- INITIALIZE STATE ---
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
         st.session_state['user_phone_id'] = None
@@ -187,8 +184,6 @@ def main():
     if 'has_seen_welcome' not in st.session_state:
         st.session_state['has_seen_welcome'] = False
 
-    # --- SHOW WELCOME MODAL (ONCE PER SESSION) ---
-    # Only show if they haven't seen it AND they aren't logged in yet
     if not st.session_state['has_seen_welcome'] and not st.session_state['logged_in']:
         show_welcome_modal()
 
@@ -226,7 +221,6 @@ def main():
                         st.session_state['user_phone_id'] = user_data['phone_id']
                         st.session_state['display_name'] = user_data['display_name']
                         st.session_state['country_code'] = user_data['country_code']
-                        # Ensure welcome message is marked as seen so it doesn't pop up later
                         st.session_state['has_seen_welcome'] = True
                         st.rerun()
                     else:
@@ -261,19 +255,16 @@ def main():
     # VIEW B: LOGGED IN
     # =========================================================
     else:
-        # --- SIDEBAR (LOGOUT & INFO) ---
         with st.sidebar:
             st.image("founder.jpeg", width=80)
             st.write(f"Welcome, **{st.session_state['display_name']}**")
             st.caption(f"ID: {st.session_state['user_phone_id']}")
             st.divider()
             
-            # LOGOUT BUTTON
             if st.button("🚪 Log Out", type="primary", use_container_width=True):
-                # We clear the specific keys to reset the app state
                 st.session_state['logged_in'] = False
                 st.session_state['user_phone_id'] = None
-                st.session_state['has_seen_welcome'] = False # Reset this so next user sees it
+                st.session_state['has_seen_welcome'] = False
                 st.rerun()
 
         tab1, tab2, tab3 = st.tabs(["🛍️ Buy", "➕ Sell", "👤 Profile"])
